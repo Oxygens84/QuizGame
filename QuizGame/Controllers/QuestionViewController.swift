@@ -11,39 +11,30 @@ import WebKit
 
 class QuestionViewController: UIViewController {
 
-    let questions: [Question] =
-        [
-          Question(
-            question: "Как правильно продолжить припев детской песни: \"Тили-тили...\"?",
-            answers: ["хали-гали","трали-вали","жили-были","ели-пили"],
-            correctAnswer: 1),
-          Question(
-            question: "Как называется экзотическое животное из Южной Америки?",
-            answers: ["пчеложор","термитоглот","муравьед","комаролов"],
-            correctAnswer: 2),
-          Question(
-            question: "Какой фильм сделал знаменитой песню в исполнении Уитни Хьюстон?",
-            answers: ["Телохранитель","Красотка","Форрест Гамп","Пятый элемент"],
-            correctAnswer: 0),
-          Question(
-            question: "Какой писатель сформулировал Три закона робототехники?",
-            answers: ["Карел Чапек","Айзек Азимов","Станислав Лем","Курт Воннегут"],
-            correctAnswer: 1),
-          Question(
-            question: "Возле какой горы впервые был найден драгоценный камень танзанит?",
-            answers: ["Элбрус","Мак-Кинли","Аконкагуа","Килиманджаро"],
-            correctAnswer: 3)
-        ]
+    private var setStrategy: SetQuestionsStrategy {
+        switch Game.shared.gameStrategy {
+        case .normal:
+            return SequentialQuestionsStrategy()
+        case .random:
+            return RandomQuestionsStrategy()
+        }
+    }
     
-    var currentQuestion: Int = 0
-    var currentCorrectAnswer: Int = -1
+    private var gameQuestions: GameQuestions?
+    private let observer = Observer()
+    
+    private var questions: [Question] = []
+    private var currentQuestion: Int = 0
+    private var currentCorrectAnswer: Int = -1
     
     @IBOutlet weak var questionLabel: UILabel!
     @IBOutlet weak var answer1: UIButton!
     @IBOutlet weak var answer2: UIButton!
     @IBOutlet weak var answer3: UIButton!
     @IBOutlet weak var answer4: UIButton!
-
+    @IBOutlet weak var gameInfo: UILabel!
+    
+    @IBOutlet weak var questionNum: UILabel!
     @IBAction func answerOnClick1(_ sender: UIButton) {
         validateAnswer(button: sender)
     }
@@ -59,9 +50,11 @@ class QuestionViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        setStrategyForGame()
         Game.shared.game = GameSession()
         Game.shared.game?.questions = questions.count
         setValues()
+        setGameInfo()
     }
     
     func setValues(){
@@ -72,6 +65,7 @@ class QuestionViewController: UIViewController {
             answer3.setTitle(questions[currentQuestion].answers[2], for: .normal)
             answer4.setTitle(questions[currentQuestion].answers[3], for: .normal)
             currentCorrectAnswer = questions[currentQuestion].correctAnswer
+            Game.shared.game?.currentQuestion.value += 1
         }
     }
     
@@ -94,7 +88,7 @@ class QuestionViewController: UIViewController {
     @objc func validateAnswer(button: UIButton){
         Game.shared.game?.totalAnswers += 1
         if currentCorrectAnswer == button.tag {
-            Game.shared.game?.correctAnswers += 1
+            Game.shared.game?.correctAnswers.value += 1
             if currentQuestion < questions.count {
                 currentQuestion += 1
                 setValues()
@@ -111,5 +105,18 @@ class QuestionViewController: UIViewController {
                 Messages.userLoser.rawValue)
         }
     }
+    
+    func setStrategyForGame(){
+        questions = self.setStrategy.setQuestions(GameQuestions().get())
+    }
 
+    func setGameInfo(){
+        Game.shared.game?.currentQuestion.addObserver(observer, options: [.initial, .new, .old]) { info, change in
+            self.questionNum.text = String("Current question: \(info)")
+            
+        }
+        Game.shared.game?.correctAnswers.addObserver(observer, options: [.initial, .new, .old]) { info, change in
+            self.gameInfo.text = String("Correct questions: \(Game.shared.game!.percentage) %")
+        }
+    }
 }

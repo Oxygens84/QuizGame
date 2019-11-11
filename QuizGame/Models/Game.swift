@@ -11,6 +11,8 @@ import Foundation
 final class Game {
     
     var game: GameSession?
+    var gameStrategy: GameStrategy = .normal
+     
     static let shared = Game()
     
     private let recordsCaretaker = GameCaretaker()
