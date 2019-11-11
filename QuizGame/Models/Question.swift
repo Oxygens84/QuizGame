@@ -8,15 +8,21 @@
 
 import Foundation
 
-struct Question {
+class Question {
     
+    var questionNumber: Int
     var question: String
     var answers: [String]
     var correctAnswer: Int
     
-    init(question: String, answers: [String], correctAnswer: Int) {
+    init(questionNumber: Int, question: String, answers: [String], correctAnswer: Int) {
+        self.questionNumber = questionNumber
         self.question = question
         self.answers = answers
         self.correctAnswer = correctAnswer
+    }
+    
+    public func setQuestionNumber(_ num: Int){
+        self.questionNumber = num
     }
 }
